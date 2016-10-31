@@ -12,17 +12,35 @@ const db = new PouchDB(urlFormat(config.get("couch")));
 
 var dal = {
     getPerson: getPerson,
-    listPersons: listPersons,
     updatePerson: updatePerson,
     createPerson: createPerson,
     deletePerson: deletePerson,
+    listPersons: listPersons,
     createView: createView,
     getReliefEffort: getReliefEffort,
-    listReliefEfforts: listReliefEfforts,
     updateReliefEffort: updateReliefEffort,
     createReliefEffort: createReliefEffort,
-    deleteReliefEffort: deleteReliefEffort
+    deleteReliefEffort: deleteReliefEffort,
+    listReliefEfforts: listReliefEfforts
 };
+
+function listDocs(sortBy, startKey, limit, callback) { //Persons
+  //Validate perams
+  if (sortBy === undefined || sortBy === null ) return callback(new Error("Shits gone cray"))
+
+  limit = startKey !== '' ? limit + 1 : limit
+
+  db.query(sortBy, {
+    startkey: startKey,
+    limit: limit
+  }, function(err, data) {
+    if (err) return callback(err)
+    if (startKey !== '') data.rows.shift()
+    callback(null, data)
+  })
+
+}
+
 
 /////////////////////////
 //  UTILITY FUNCTIONS
@@ -32,53 +50,54 @@ var convertPersons = function(queryRow) {
     return queryRow.doc;
 };
 
-// function queryDB(sortBy, startKey, limit, callback) {
-//     if (typeof startKey == "undefined" || startKey === null) {
-//         return callback(new Error('Missing search parameter'));
-//     } else if (typeof limit == "undefined" || limit === null || limit === 0) {
-//         return callback(new Error('Missing limit parameter'));
-//
-//     } else {
-//         limit = startKey === '' ? Number(limit) : Number(limit) + 1;
-//
-//         console.log("sortBy:", sortBy, " startKey: ", startKey, " limit: ", limit)
-//
-//         //////     PROMISES
-//         db.query(sortBy, {
-//             startkey: startKey,
-//             limit: limit,
-//             include_docs: true
-//         }).then(function(result) {
-//             // Do we need to skip (remove/shift) the first item
-//             //  out of the array
-//             if (startKey !== '' && result.rows.length > 0) {
-//                 // remove first item
-//                 result.rows.shift();
-//             }
-//             return callback(null, result.rows.map(convertPersons));
-//         }).catch(function(err) {
-//             return callback(err);
-//         });
-//
-//         //////     CALLBACKS
-//         // db.query(sortBy, {
-//         //     startkey: startKey,
-//         //     limit: limit,
-//         //     include_docs: true
-//         // }, function(err, result) {
-//         //     if (err) return callback(err);
-//         //     if (result) {
-//         //         // Do we need to skip (remove/shift) the first item
-//         //         //  out of the array
-//         //         if (startKey !== '' && result.rows.length > 0) {
-//         //             // remove first item
-//         //             result.rows.shift();
-//         //         }
-//         //         return callback(null, result.rows.map(convertPersons));
-//         //     }
-//         // });
-//     }
-// }
+function queryDB(sortBy, startKey, limit, callback) {
+    if (typeof startKey == "undefined" || startKey === null) {
+        return callback(new Error('Missing search parameter'));
+    } else if (typeof limit == "undefined" || limit === null || limit === 0) {
+        return callback(new Error('Missing limit parameter'));
+
+    } else {
+        limit = startKey === '' ? Number(limit) : Number(limit) + 1;
+
+        console.log("sortBy:", sortBy, " startKey: ", startKey, " limit: ", limit)
+
+        //////     PROMISES
+        db.query(sortBy, {
+            startkey: startKey,
+            limit: limit,
+            include_docs: true
+        }).then(function(result) {
+            // Do we need to skip (remove/shift) the first item
+            //  out of the array
+            if (startKey !== '' && result.rows.length > 0) {
+                // remove first item
+                result.rows.shift();
+            }
+            return callback(null, result.rows.map(convertPersons));
+        }).catch(function(err) {
+            return callback(err);
+        });
+
+        //////     CALLBACKS
+        // db.query(sortBy, {
+        //     startkey: startKey,
+        //     limit: limit,
+        //     include_docs: true
+        // }, function(err, result) {
+        //     if (err) return callback(err);
+        //     if (result) {
+        //         // Do we need to skip (remove/shift) the first item
+        //         //  out of the array
+        //         if (startKey !== '' && result.rows.length > 0) {
+        //             // remove first item
+        //             result.rows.shift();
+        //         }
+        //         return callback(null, result.rows.map(convertPersons));
+        //     }
+        // });
+    }
+}
+
 
 function getDocByID(id, callback) {
     // Call to couch retrieving a document with the given _id value.
@@ -86,18 +105,18 @@ function getDocByID(id, callback) {
         return callback(new Error('400Missing id parameter'));
     } else {
 
-        //////     PROMISES
-        // db.get(id).then(function(response) {
-        //     return callback(null, response);
-        // }).catch(function(err) {
-        //     return callback(err);
-        // });
-
-        //////     CALLBACKS
-        db.get(id, function(err, data) {
-            if (err) return callback(err);
-            if (data) return callback(null, data);
+        ////     PROMISES
+        db.get(id).then(function(response) {
+            return callback(null, response);
+        }).catch(function(err) {
+            return callback(err);
         });
+
+        // //////     CALLBACKS
+        // db.get(id, function(err, data) {
+        //     if (err) return callback(err);
+        //     if (data) return callback(null, data);
+        // });
     }
 }
 
@@ -181,12 +200,13 @@ function deleteDoc(data, callback) {
 }
 
 
-
-
-
 ///////////////////////////////////////////////////////////////////////////
 //                              PERSONS
 ///////////////////////////////////////////////////////////////////////////
+function listPersons(sortBy, startKey, limit, callback) {
+  listDocs(sortBy, startKey, limit, callback)
+}
+
 function getPerson(id, callback) {
     getDocByID(id, callback);
 }
@@ -240,12 +260,13 @@ function createPerson(data, callback) {
 
 
 
-
-
-
 //////////////////////////////////////////////////////////////////////
 //                       RELIEF EFFORTS
 //////////////////////////////////////////////////////////////////////
+function listReliefEfforts(sortBy, startKey, limit, callback) {
+  listDocs(sortBy, startKey, limit, callback)
+}
+
 function getReliefEffort(id, callback) {
     getDocByID(id, callback);
 }

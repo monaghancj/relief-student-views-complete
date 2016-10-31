@@ -54,7 +54,6 @@ dalNoSQL.createView(designDoc2, function callback(err, data) {
     }
 })
 
-
 dalNoSQL.createView(designDoc3, function callback(err, data) {
     if (err) return console.log(err);
     if (data) {
