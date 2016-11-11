@@ -12,7 +12,7 @@ const dalNoSQL = require('./DAL/no-sql.js');
 // person data. Use to test the createPerson() function within your DAL,
 // Make INDIVIDUAL calls to the createPerson() function within your DAL
 // with each person within the array.
-const personData = [{
+//const personData = [{
 //     firstName: "Jimmy",
 //     lastName: "Martin",
 //     phone: "404 394-2479",
@@ -62,41 +62,50 @@ const personData = [{
 //     type: "person",
 //     active: true
 // }]
-    firstName: "Rick",
-    lastName: "Sanchez",
-    phone: "843 105-1019",
-    email: "rickandmorty@cofc.edu",
+//     firstName: "Rick",
+//     lastName: "Sanchez",
+//     phone: "843 105-1019",
+//     email: "rickandmorty@cofc.edu",
+//     type: "person",
+//     active: true
+// },{
+//     firstName: "Jamie",
+//     lastName: "Thomas",
+//     phone: "843 907-9087",
+//     email: "sthomasj@fallen.com",
+//     type: "person",
+//     active: true
+// },{
+//     firstName: "Steve",
+//     lastName: "Caballero",
+//     phone: "301 555-1515",
+//     email: "steveCab@gmail.com",
+//     type: "person",
+//     active: true
+// },{
+//     firstName: "Nina",
+//     lastName: "Monaghan",
+//     phone: "843 555-1515",
+//     email: "ninaMarie@gmail.com",
+//     type: "person",
+//     active: true
+// },{
+//     firstName: "Jesus",
+//     lastName: "Christ",
+//     phone: "666 911-0000",
+//     email: "jcsuperStart@not4money.org",
+//     type: "person",
+//     active: true
+// }]
+
+var person = {
+    firstName: "Donald",
+    lastName: "Trump",
+    phone: "623 411-1000",
+    email: "jtrumpin@money.org",
     type: "person",
     active: true
-},{
-    firstName: "Jamie",
-    lastName: "Thomas",
-    phone: "843 907-9087",
-    email: "sthomasj@fallen.com",
-    type: "person",
-    active: true
-},{
-    firstName: "Steve",
-    lastName: "Caballero",
-    phone: "301 555-1515",
-    email: "steveCab@gmail.com",
-    type: "person",
-    active: true
-},{
-    firstName: "Nina",
-    lastName: "Monaghan",
-    phone: "843 555-1515",
-    email: "ninaMarie@gmail.com",
-    type: "person",
-    active: true
-},{
-    firstName: "Jesus",
-    lastName: "Christ",
-    phone: "666 911-0000",
-    email: "jcsuperStart@not4money.org",
-    type: "person",
-    active: true
-}]
+}
 
 function callback (msgHeader) {
   return function (err, response) {
@@ -104,7 +113,9 @@ function callback (msgHeader) {
     return console.log(msgHeader, response)
   }
 }
+//
+// personData.forEach(function(person) {
+//   dalNoSQL.createPerson(person, callback('PERSON CREATED:\n'))
+// })
 
-personData.forEach(function(person) {
-  dalNoSQL.createPerson(person, callback('PERSON CREATED:\n'))
-})
+dalNoSQL.createPerson(person, callback('PERSON CREATED:\n'))

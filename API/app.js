@@ -6,7 +6,7 @@ var app = express()
 const port = process.env.PORT || 3000  // Use process.env to acess the contents of the user environment
 const dal = require('../DAL/no-sql.js')
 
-var jsonParser = bodyParser.json()
+app.use(bodyParser.json())
 
 // ------  GENERAL  -------  //
 app.get('/', function (req, res) {
@@ -32,7 +32,12 @@ app.get('/persons/:id', function(req, res, next) {
 })
 
 app.get('/persons', function(req, res, next) {
-  dal.listPersons('emailView', '', 10, function(err, body){
+  const sortBy = req.query.sortby || 'lastNameView';
+  const sortToken = req.query.sorttoken || '';
+  const limit = req.query.limit || 5;
+
+  dal.listPersons(sortBy, sortToken, limit, function(err, body){
+    console.log(sortBy, sortToken, limit)
     if (err) {
       var newErr = new HTTPError(500, 'Bad Sumtin', {
         m: 'Something went wrong'
@@ -46,7 +51,7 @@ app.get('/persons', function(req, res, next) {
   })
 })
 
-app.post('/persons', jsonParser, function(req, res, next) {
+app.post('/persons', function(req, res, next) {
   var personData = {
      "firstName": "Mary",
      "lastName": "Gonzalez",
@@ -63,45 +68,48 @@ app.post('/persons', jsonParser, function(req, res, next) {
   })
 })
 
-app.put('/persons/:id', jsonParser, function(req, res, next) {
-  var personData = {
-    "_id": "person_mgo1234@yahoo.com",
-    "_rev": "9-5fe47d418eb350771cd818ab6e3f58c6",
-    "firstName": "Mary",
-    "lastName": "Gonzalezss",
-    "phone": "404 303-1234",
-    "email": "mgo1234@yahoo.com"
-  }
-
-  dal.updatePerson(personData, function(err, body) {
+app.put('/persons/:id', function(req, res, next) {
+  dal.getPerson(req.params.id, function(err, data){
     if (err) {
       var newErr = new HTTPError(500, 'Bad Request ID', {
-        m: 'Update Person did not work'
+        m: 'Get Person did not work'
       })
       return next(newErr)
     }
-    if (body) {
-      res.append('content-type', 'application/json')
-      res.status(500).send(JSON.stringify(body, null, 2))
-    }
+    req.body["_id"] = data["_id"]
+    req.body["_rev"] = data["_rev"]
+    dal.updatePerson(req.body, function(err, body) {
+      if (err) {
+        var newErr = new HTTPError(500, 'Bad Request ID', {
+          m: 'Update Person did not work'
+        })
+        return next(newErr)
+      }
+      if (body) {
+        res.append('content-type', 'application/json')
+        res.status(500).send(JSON.stringify(body, null, 2))
+      }
+    })
   })
 })
 
-app.delete('/persons/:id', jsonParser, function(req, res, next) {
-  var personData = {
-    "_id": "person_JimmyMartinJr@gmail.com",
-    "_rev": "1-6a03349ba1398f6d38a3871ff9721725"
-  }
-  dal.deletePerson(personData, function(err, body) {
-    if (err) {
-      var newErr = new HTTPError(500, 'Bad Request ID', {
-        m: 'Delete Person did not work'
+app.delete('/persons/:id', function(req, res, next) {
+  dal.getPerson(req.params.id, function(err, data) {
+    if (err) return next(err)
+    if (data) {
+      console.log('Data: ' + data)
+      dal.deletePerson(data, function(deletedErr, deletedBody) {
+        if (deletedErr) {
+          var newErr = new HTTPError(500, 'Bad Request ID', {
+            m: 'Delete Person did not work'
+          })
+          return next(newErr)
+        }
+        if (deletedBody) {
+          res.append('content-type', 'application/json')
+          res.status(500).send(JSON.stringify(deletedBody, null, 2))
+        }
       })
-      return next(newErr)
-    }
-    if (body) {
-      res.append('content-type', 'application/json')
-      res.status(500).send(JSON.stringify(body, null, 2))
     }
   })
 })
@@ -124,9 +132,13 @@ app.get('/reliefEfforts/:id', function(req, res, next) {
   })
 })
 
-//       /reliefEfforts?sortby=name&startkey=haiti+2015&limit=5
+//      '/reliefEfforts?sortby=name&startkey=haiti+2015&limit=5
 app.get('/reliefEfforts', function(req, res, next) {
-  dal.listReliefEfforts('reliefEfforts', '', 10, function(err, body){
+  const sortBy = req.query.sortby || 'reliefEfforts'
+  const sortToken = req.query.sorttoken || ''
+  const limit = req.query.limit || 5
+
+  dal.listReliefEfforts(sortBy, sortToken, limit, function(err, body){
     if (err) {
       var newErr = new HTTPError(500, 'Bad Sumtin', {
         m: 'Something went wrong'
@@ -140,101 +152,59 @@ app.get('/reliefEfforts', function(req, res, next) {
   })
 })
 
-app.post('/reliefEfforts', jsonParser, function(req, res, next) {
-  var reliefData = {
-    "phase": "complete",
-    "name": "Tears of the Sun 2003",
-    "organizationID": "Special-Ops",
-    "desc": "Evacuate UN doctor from Nigerian village due to dangerous, growing militia groups in the area. ",
-    "start": "2002-12-01",
-    "end": "203-12-08",
-    "team": [
-      {
-        "name": "Bruce Willis",
-        "role": "Team Leader",
-        "personID": "person_steveharvey1111@gmail.com"
-      },
-      {
-        "name": "Bad Ass # 1",
-        "role": "Team member",
-        "personID": "person_marine2thaCore1972@gmail.com"
-      },
-      {
-        "name": "Bad Ass # 2",
-        "role": "Team member",
-        "personID": "person_junglefever@gmail.com"
-      }
-    ]
-  }
+app.post('/reliefEfforts', function(req, res, next) {
 
-  dal.createReliefEffort(reliefData, function(err, body) {
+  dal.createReliefEffort(req.body, function(err, body) {
     if (err) console.log('Didnt work')
     if (body) {
-      // console.log('Worked: ' + JSON.stringify(res))
       res.append('content-type', 'application/json')
       res.status(500).send(JSON.stringify(body, null, 2))
     }
   })
+
 })
 
-app.put('/reliefEfforts/:id', jsonParser, function(req, res, next) {
-  var reliefData = {
-    "_id": "relief_Special-Ops_Tears_of_the_Sun_2003",
-    "_rev": "1-a2803cd7b162539ba938daf544ca73c1",
-    "phase": "complete",
-    "name": "Tears of the Sun 2003",
-    "organizationID": "Special-Ops",
-    "desc": "Evacuate UN doctor from Nigerian village due to dangerous, growing militia groups in the area. ",
-    "start": "2002-12-01",
-    "end": "2003-12-08",
-    "team": [
-      {
-        "name": "Bruce Willis",
-        "role": "Team Leader",
-        "personID": "person_willyBruce1@gmail.com"
-      },
-      {
-        "name": "Bad Ass # 1",
-        "role": "Team member",
-        "personID": "person_marine2thaCore1972@gmail.com"
-      },
-      {
-        "name": "Bad Ass # 2",
-        "role": "Team member",
-        "personID": "person_junglefever@gmail.com"
+app.put('/reliefEfforts/:id',  function(req, res, next) {
+  dal.getReliefEffort(req.params.id, function(err, data){
+    if (err) {
+      var newErr = new HTTPError(500, 'Bad Request ID', {
+        m: 'Get Relief Effort did not work'
+      })
+      return next(newErr)
+    }
+    req.body["_id"] = data["_id"]
+    req.body["_rev"] = data["_rev"]
+    dal.updateReliefEffort(req.body, function(updatedErr, updatedBody) {
+      if (updatedErr) {
+        var newErr = new HTTPError(500, 'Bad Request ID', {
+          m: 'Update Relief did not work'
+        })
+        return next(newErr)
       }
-    ]
-  }
-
-  dal.updatePerson(reliefData, function(err, body) {
-    if (err) {
-      var newErr = new HTTPError(500, 'Bad Request ID', {
-        m: 'Update Relief did not work'
-      })
-      return next(newErr)
-    }
-    if (body) {
-      res.append('content-type', 'application/json')
-      res.status(500).send(JSON.stringify(body, null, 2))
-    }
+      if (updatedBody) {
+        res.append('content-type', 'application/json')
+        res.status(500).send(JSON.stringify(updatedBody, null, 2))
+      }
+    })
   })
 })
 
-app.delete('/reliefEffort/:id', jsonParser, function(req, res, next) {
-  var reliefData = {
-    "_id": "relief_Special-Ops_Tears_of_the_Sun_2003",
-    "_rev": "2-3724702d9f0504f4796985a2945f00d0"
-  }
-  dal.deleteReliefEffort(reliefData, function(err, body) {
-    if (err) {
-      var newErr = new HTTPError(500, 'Bad Request ID', {
-        m: 'Delete Relief did not work'
+app.delete('/reliefEffort/:id',  function(req, res, next) {
+  dal.getReliefEffort(req.params.id, function(err, data) {
+    if (err) return next(console.log("get Person failed"))
+    if (data) {
+      dal.deleteReliefEffort(data, function(deletedErr, deletedBody) {
+        if (deletedErr) {
+          var newErr = new HTTPError(500, 'Bad Request ID', {
+            m: 'Delete Relief did not work'
+          })
+          return next(newErr)
+        }
+        if (deletedBody) {
+          res.append('content-type', 'application/json')
+          res.status(500).send(JSON.stringify(body, null, 2))
+        }
       })
-      return next(newErr)
-    }
-    if (body) {
-      res.append('content-type', 'application/json')
-      res.status(500).send(JSON.stringify(body, null, 2))
     }
   })
 })

@@ -38,9 +38,7 @@ function listDocs(sortBy, startKey, limit, callback) { //Persons
     if (startKey !== '') data.rows.shift()
     callback(null, data)
   })
-
 }
-
 
 /////////////////////////
 //  UTILITY FUNCTIONS
@@ -59,7 +57,7 @@ function queryDB(sortBy, startKey, limit, callback) {
     } else {
         limit = startKey === '' ? Number(limit) : Number(limit) + 1;
 
-        console.log("sortBy:", sortBy, " startKey: ", startKey, " limit: ", limit)
+        console.log("sortBy: ", sortBy, " startKey: ", startKey, " limit: ", limit)
 
         //////     PROMISES
         db.query(sortBy, {
@@ -98,7 +96,6 @@ function queryDB(sortBy, startKey, limit, callback) {
     }
 }
 
-
 function getDocByID(id, callback) {
     // Call to couch retrieving a document with the given _id value.
     if (typeof id == "undefined" || id === null) {
@@ -106,17 +103,17 @@ function getDocByID(id, callback) {
     } else {
 
         ////     PROMISES
-        db.get(id).then(function(response) {
-            return callback(null, response);
-        }).catch(function(err) {
-            return callback(err);
-        });
-
-        // //////     CALLBACKS
-        // db.get(id, function(err, data) {
-        //     if (err) return callback(err);
-        //     if (data) return callback(null, data);
+        // db.get(id).then(function(response) {
+        //     return callback(null, response);
+        // }).catch(function(err) {
+        //     return callback(err);
         // });
+
+        //////     CALLBACKS
+        db.get(id, function(err, data) {
+            if (err) return callback(err);
+            if (data) return callback(null, data);
+        });
     }
 }
 
@@ -199,7 +196,6 @@ function deleteDoc(data, callback) {
 
 }
 
-
 ///////////////////////////////////////////////////////////////////////////
 //                              PERSONS
 ///////////////////////////////////////////////////////////////////////////
@@ -257,8 +253,6 @@ function createPerson(data, callback) {
         });
     }
 }
-
-
 
 //////////////////////////////////////////////////////////////////////
 //                       RELIEF EFFORTS
