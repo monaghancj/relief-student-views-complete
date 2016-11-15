@@ -37,6 +37,7 @@ var updateRelief = {
   phase: "active"
 }
 
+//       --- Persons ---
 // dalMySQL.createPerson(person, function(err, response) {
 //   if (err) return console.log(err)
 //   console.log(response)
@@ -57,11 +58,12 @@ var updateRelief = {
 //   console.log("Response: " + response)
 // })
 
-// dalMySQL.listPersons(function(err, response) {
-//   if (err) return console.log("Err: " + err)
-//   console.log("Response: " + response)
-// })
+dalMySQL.listPersons('vPerson', '', '', function(err, response) {
+  if (err) return console.log("Err: " + err)
+  console.log("Response: " + JSON.stringify(response.result, null, 2))
+})
 
+//     --- RELIEFS ---
 // dalMySQL.createRelief(relief, function(err, response) {
 //    if (err) return console.log("Err: " + err)
 //    console.log("Response: " + response)
@@ -77,7 +79,7 @@ var updateRelief = {
 //   console.log(response)
 // })
 
-dalMySQL.listReliefs(function(err, response) {
-  if (err) return console.log(err)
-  console.log(response)
-})
+// dalMySQL.listReliefs(function(err, response) {
+//   if (err) return console.log(err)
+//   console.log(response)
+// })

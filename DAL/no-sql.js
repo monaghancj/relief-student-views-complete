@@ -24,6 +24,14 @@ var dal = {
     listReliefEfforts: listReliefEfforts
 };
 
+/////////////////////////
+//  UTILITY FUNCTIONS
+/////////////////////////
+var convertPersons = function(queryRow) {
+    queryRow.doc.sortToken = queryRow.key;
+    return queryRow.doc;
+};
+
 function listDocs(sortBy, startKey, limit, callback) { //Persons
   //Validate perams
   if (sortBy === undefined || sortBy === null ) return callback(new Error("Shits gone cray"))
@@ -39,14 +47,6 @@ function listDocs(sortBy, startKey, limit, callback) { //Persons
     callback(null, data)
   })
 }
-
-/////////////////////////
-//  UTILITY FUNCTIONS
-/////////////////////////
-var convertPersons = function(queryRow) {
-    queryRow.doc.sortToken = queryRow.key;
-    return queryRow.doc;
-};
 
 function queryDB(sortBy, startKey, limit, callback) {
     if (typeof startKey == "undefined" || startKey === null) {

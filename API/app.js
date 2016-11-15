@@ -3,10 +3,17 @@ var HTTPError = require('node-http-error')
 var bodyParser = require('body-parser')
 var express = require('express')
 var app = express()
-const port = process.env.PORT || 3000  // Use process.env to acess the contents of the user environment
+const port = process.env.PORT || 8080  // Use process.env to acess the contents of the user environment
 const dal = require('../DAL/no-sql.js')
 
 app.use(bodyParser.json())
+
+//Allows CORS
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
 
 // ------  GENERAL  -------  //
 app.get('/', function (req, res) {
@@ -32,35 +39,29 @@ app.get('/persons/:id', function(req, res, next) {
 })
 
 app.get('/persons', function(req, res, next) {
-  const sortBy = req.query.sortby || 'lastNameView';
-  const sortToken = req.query.sorttoken || '';
-  const limit = req.query.limit || 5;
+  const sortBy = req.query.sortby || 'vPerson'//'lastNameView';
+  const sortToken = req.query.sorttoken || ''
+  const limit = req.query.limit || 5
 
   dal.listPersons(sortBy, sortToken, limit, function(err, body){
     console.log(sortBy, sortToken, limit)
     if (err) {
       var newErr = new HTTPError(500, 'Bad Sumtin', {
-        m: 'Something went wrong'
+        m: err
       })
       return next(newErr)
     }
     if (body) {
       res.append('content-type', 'application/json')
-      res.status(500).send(JSON.stringify(body.rows, null, 2))
+      res.status(200).send(JSON.stringify(body, null, 2))
     }
   })
 })
 
 app.post('/persons', function(req, res, next) {
-  var personData = {
-     "firstName": "Mary",
-     "lastName": "Gonzalez",
-     "phone": "404 303-1234",
-     "email": "mgo1234@yahoo.com"
-  }
 
-  dal.createPerson(personData, function(err, body) {
-    if (err) console.log('Didnt work')
+  dal.createPerson(req.body, function(err, body) {
+    if (err) return next(err)
     if (body) {
       res.append('content-type', 'application/json')
       res.status(500).send(JSON.stringify(body, null, 2))
@@ -97,11 +98,13 @@ app.delete('/persons/:id', function(req, res, next) {
   dal.getPerson(req.params.id, function(err, data) {
     if (err) return next(err)
     if (data) {
-      console.log('Data: ' + data)
+      console.log('DATA in app: ' + data)
       dal.deletePerson(data, function(deletedErr, deletedBody) {
         if (deletedErr) {
+          console.log(deletedErr)
           var newErr = new HTTPError(500, 'Bad Request ID', {
-            m: 'Delete Person did not work'
+            m: 'Delete Person did not work',
+            err: deletedErr
           })
           return next(newErr)
         }
@@ -134,7 +137,7 @@ app.get('/reliefEfforts/:id', function(req, res, next) {
 
 //      '/reliefEfforts?sortby=name&startkey=haiti+2015&limit=5
 app.get('/reliefEfforts', function(req, res, next) {
-  const sortBy = req.query.sortby || 'reliefEfforts'
+  const sortBy = req.query.sortby || 'vRelief'
   const sortToken = req.query.sorttoken || ''
   const limit = req.query.limit || 5
 
@@ -147,7 +150,7 @@ app.get('/reliefEfforts', function(req, res, next) {
     }
     if (body) {
       res.append('content-type', 'application/json')
-      res.status(500).send(JSON.stringify(body.rows, null, 2))
+      res.status(500).send(JSON.stringify(body, null, 2))
     }
   })
 })
@@ -155,13 +158,12 @@ app.get('/reliefEfforts', function(req, res, next) {
 app.post('/reliefEfforts', function(req, res, next) {
 
   dal.createReliefEffort(req.body, function(err, body) {
-    if (err) console.log('Didnt work')
+    if (err) console.log('Didnt work: ' + err)
     if (body) {
       res.append('content-type', 'application/json')
       res.status(500).send(JSON.stringify(body, null, 2))
     }
   })
-
 })
 
 app.put('/reliefEfforts/:id',  function(req, res, next) {
@@ -216,5 +218,5 @@ app.use(function(err, req, res, next) {
 })
 
 app.listen(port, function () {
-  console.log('Example app listening on port 3000!')
+  console.log('Example app listening on port 8080!')
 })

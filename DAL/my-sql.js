@@ -8,11 +8,11 @@ var dal = {
   createPerson: createPerson,
   deletePerson: deletePerson,
   listPersons: listPersons,
-  getRelief: getRelief,
-  updateRelief: updateRelief,
-  createRelief: createRelief,
-  deleteRelief: deleteRelief,
-  listReliefs: listReliefs
+  getReliefReliefEffort: getRelief,
+  updateReliefEffort: updateRelief,
+  createReliefEffort: createRelief,
+  deleteReliefEffort: deleteRelief,
+  listReliefEfforts: listReliefs
 }
 
 //////////////////////////////////////////////
@@ -42,9 +42,9 @@ function parseToJSON(data) {
   return JSON.parse(JSON.stringify(data))
 }
 
-// var convertPersonNoSQLFormat = function(data) {
-//   data.active
-// }
+var convertPersonNoSQLFormat = function(data) {
+  data.active = data.active === '1' ? true : false
+}
 
 function deleteDocByID(table, id, callback) {
   if (typeof id == 'undefined' || id === null) {
@@ -52,7 +52,7 @@ function deleteDocByID(table, id, callback) {
   }
   var connection = createConnection()
   connection.connect()
-  connection.query('DELETE FROM ' + table + ' WHERE ID =' + id, function(err, result) {
+  connection.query('DELETE FROM ' + connection.escapeId(table) + ' WHERE ID = ' + parseInt(id), function(err, result) {
     if (err) return callback(err)
     if (result.affectedRows === 0) {
       return callback({
@@ -83,7 +83,7 @@ function getDocByID(table, id, callback) {
   connection.connect()
   connection.query('SELECT * FROM ' + table + ' WHERE ID =' + id, function(err, result) {
     if (err) return callback(err)
-    if (data.length === 0){
+    if (result.length === 0){
       return callback({
         error: 'not_found',
         reason: 'missing',
@@ -93,11 +93,9 @@ function getDocByID(table, id, callback) {
       })
     }
     if (typeof result !== 'undefined') {
-      //return callback(null, data.map(compose(parseToJSON, formatter))[0])
-      return callback( null, {
-        ok: true,
-        result: result
-      })
+      console.log("result: " + result)
+      //return callback(null, JSON.stringify(formatter(result[0]), null, 2))
+      return callback( null, result)
     }
   })
   connection.end(function(err){
@@ -105,17 +103,28 @@ function getDocByID(table, id, callback) {
   })
 }
 
-function listDocs(table, callback) {
-  // Create a connection to mysql
+function listDocs(table, startKey, limit, callback) {
+  if (typeof startKey === 'undefined' || startKey === null) {
+    return callback(new Error('400Missing startkey paramter'))
+  } else if (typeof limit === 'undefined' || limit === 0 || limit === null) {
+    return callback(new Error('400Missing limit paramter'))
+  }
+
   var connection = createConnection()
   connection.connect()
-  connection.query('SELECT * FROM ' + table, function(err, result) {
+
+  limit = startKey !== '' ? limit + 1 : limit
+  var cleanTable = connection.escapeId(table)
+  var cleanStartKey = connection.escapeId(startKey)
+  var cleanLimit = parseInt(limit)
+  var whereClause = startKey === '' ? '' : ' WHERE sortToken > ' + cleanStartKey
+  var limitClause = limit === '' ? '' : ' LIMIT ' + cleanLimit
+
+  connection.query('SELECT * FROM ' + cleanTable + whereClause + ' ORDER BY sortToken ' + limitClause, function(err, result) {
     if (err) return callback(err)
     if (typeof result !== 'undefined') {
-      return callback( null, {
-        ok: true,
-        result: result
-      })
+      console.log(result)
+      return callback( null, result)
     }
   })
   connection.end(function(err){
@@ -124,7 +133,7 @@ function listDocs(table, callback) {
 }
 
 ///////////////////////////////////////////////
-///////         PUBLIC              ///////////
+///////            PUBLIC             /////////
 ///////////////////////////////////////////////
 function createPerson(data, callback) {
   // Data Validation
@@ -150,10 +159,7 @@ function createPerson(data, callback) {
     if (err) return callback(err)
     if (typeof result !== 'undefined' && result.insertId !== 'undefined') {
       console.log('The solution is: ', result);
-      return callback( null, {
-        ok: true,
-        id: result.insertId
-      })
+      return callback( null, result.insertId)
     }
   })
   connection.end(function(err){
@@ -191,16 +197,16 @@ function updatePerson(data, callback) {
   })
 }
 
-function deletePerson(id, callback) {
-  deleteDocByID('persons', id, callback)
+function deletePerson(data, callback) {
+  deleteDocByID('persons', data[0].ID, callback)
 }
 
 function getPerson(id, callback) {
    getDocByID('persons', id, callback)
 }
 
-function listPersons(callback) {
-  listDocs('persons', callback)
+function listPersons(table, startKey, limit, callback) {
+  listDocs(table, startKey, limit, callback)
 }
 
 function createRelief(data, callback) {
@@ -263,16 +269,16 @@ function updateRelief(data, callback) {
   })
 }
 
-function deleteRelief(id, callback) {
-  deleteDocByID('relief', id, callback)
+function deleteRelief(data, callback) {
+  deleteDocByID('relief', data[0].id, callback)
 }
 
 function getRelief(id, callback) {
   getDocByID('relief', id, callback)
 }
 
-function listReliefs(callback) {
-  listDocs('relief', callback)
+function listReliefs(table, startKey, limit, callback) {
+  listDocs(table, startKey, limit, callback)
 }
 
 module.exports = dal;
